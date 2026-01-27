@@ -72,24 +72,32 @@ cosine_sim = cosine_similarity(count_matrix, count_matrix)
 
 # 9. Recommendation Function
 # This function takes a movie title and returns the top 10 similar movies
-def get_recommendations(title, cosine_sim=cosine_sim):
-    # Get the index of the movie that matches the title
-    idx = df_movies.index[df_movies['title'] == title].tolist()[0]
+def get_recommendations(user_input, cosine_sim=cosine_sim):
+    # 1. Check if the user input is an exact movie title in our data
+    if user_input in df_movies['title'].values:
+        idx = df_movies.index[df_movies['title'] == user_input].tolist()[0]
+        sim_scores = list(enumerate(cosine_sim[idx]))
+    else:
+        # 2. If it's NOT a title (like your survey tags), treat it as a search
+        # Transform the user's tags into the same vector space as our movies
+        from sklearn.feature_extraction.text import CountVectorizer
+        
+        # We use the existing vectorizer to transform the new user query
+        count = CountVectorizer(stop_words='english')
+        count_matrix = count.fit_transform(df_movies['soup'])
+        user_vec = count.transform([user_input])
+        
+        # Calculate similarity between the user query and all movies
+        from sklearn.metrics.pairwise import cosine_similarity
+        sim_scores = list(enumerate(cosine_similarity(user_vec, count_matrix)[0]))
 
-    # Get the pairwise similarity scores of all movies with that movie
-    sim_scores = list(enumerate(cosine_sim[idx]))
-
-    # Sort the movies based on the similarity scores
+    # 3. Sort and get top results as usual
     sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
-
-    # Get the scores of the 10 most similar movies (skip the first one because it's the movie itself)
-    sim_scores = sim_scores[1:11]
-
-    # Get the movie indices
+    sim_scores = sim_scores[0:10] # Top 10 matches
     movie_indices = [i[0] for i in sim_scores]
-
-    # Return the top 10 most similar movies
-    return df_movies['title'].iloc[movie_indices]
+    
+    # Return the full movie objects so the dashboard can show titles and ratings
+    return df_movies.iloc[movie_indices]
 
 # 🧪 TEST THE ENGINE
 print("\n--- CineSense Recommendations for 'The Dark Knight Rises' ---")
