@@ -20,4 +20,5 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('users/', include('users.urls')), #this connects the survey page
+    path('accounts/', include('django.contrib.auth.urls')), # This adds login, logout, password management URLs
 ]

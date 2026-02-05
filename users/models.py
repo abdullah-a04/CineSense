@@ -12,7 +12,7 @@ class Profile(models.Model):
     def __str__(self):
         return f"{self.user.username}'s Profile"
 
-# THE SIGNALS: This ensures a profile is created every time a new User is registered
+# This ensures a profile is created every time a new User is registered
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:

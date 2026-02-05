@@ -4,23 +4,23 @@ from django.contrib.auth.decorators import login_required
 from engine_logic import get_recommendations
 from .models import Profile
 
-#@login_required
+@login_required
 def preference_survey(request):
     if request.method == 'POST':
-        # 1. Capture data from the frontend form
+        # Capture data from the frontend form
         selected_genres = request.POST.getlist('genres')
         favorite_stars = request.POST.get('stars', '')
 
-        # 2. Get the current user's profile
+        # Get the current user's profile
         profile = request.user.profile
         
-        # 3. Save the data (joining genres into a single string)
+        # Save the data to the profile
         profile.favorite_genres = ",".join(selected_genres)
         profile.favorite_actors = favorite_stars
         profile.survey_completed = True
         profile.save()
 
-        # 4. Redirect to the home page (we will build this next)
+        # Redirect to the home page after saving the survey data
         return redirect('home')
 
     # List of genres to display as options on the page
