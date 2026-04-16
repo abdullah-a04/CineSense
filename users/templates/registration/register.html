@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>CineSense | Sign Up</title>
+</head>
+<body class="bg-dark text-white d-flex align-items-center justify-content-center" style="height: 100vh;">
+    <div class="card bg-secondary text-white p-4 shadow-lg border-0" style="width: 450px; border-radius: 15px;">
+        <h2 class="text-center mb-4 fw-bold">Join CineSense</h2>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            {% for field in form %}
+                <div class="mb-3">
+                    <label class="form-label text-light">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <small class="form-text text-info">{{ field.help_text }}</small>
+                    {% endif %}
+                    {% for error in field.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            
+            <button type="submit" class="btn btn-success btn-lg w-100 fw-bold mt-3">Create Account</button>
+        </form>
+
+        <div class="mt-4 text-center">
+            <p class="text-light mb-0">Already have an account?</p>
+            <a href="{% url 'login' %}" class="text-info text-decoration-none fw-bold">Sign in here</a>
+        </div>
+        
+    </div>
+</body>
+</html>

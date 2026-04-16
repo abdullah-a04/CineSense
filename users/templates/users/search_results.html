@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>CineSense | Search Results</title>
+    <style>
+        .movie-card { transition: transform 0.2s; }
+        .movie-card:hover { transform: scale(1.05); }
+        .poster-container { height: 300px; overflow: hidden; background-color: #000; }
+    </style>
+</head>
+<body class="bg-dark text-white">
+    <div class="container mt-5">
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>🔍 Search Results for "{{ query }}"</h1>
+            <a href="{% url 'home' %}" class="btn btn-outline-info">Back to Dashboard</a>
+        </div>
+        <hr class="bg-secondary mb-5">
+
+        <div class="row row-cols-1 row-cols-md-3 row-cols-lg-5 g-4 mb-5">
+            {% if movies %}
+                {% for movie in movies %}
+                    <div class="col">
+                        <div class="card h-100 bg-secondary text-white movie-card border-0 shadow">
+                            
+                            <div class="poster-container d-flex align-items-center justify-content-center">
+                                {% if movie.poster_path %}
+                                    <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" 
+                                         class="img-fluid w-100 h-100" 
+                                         style="object-fit: cover;" 
+                                         alt="{{ movie.title }}">
+                                {% else %}
+                                    <span class="text-muted small text-center p-3">No Poster Available<br>(ID: {{ movie.id }})</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="card-body d-flex flex-column">
+                                <h6 class="card-title fw-bold text-truncate" title="{{ movie.title }}">{{ movie.title }}</h6>
+                                <p class="card-text small text-info mb-3">Avg Rating: ⭐ {{ movie.vote_average|default:"N/A" }}/10</p>
+                                
+                                <div class="mt-auto">
+                                    <form method="POST" action="{% url 'add_to_watchlist' movie.id %}" class="mb-2">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="movie_title" value="{{ movie.title }}">
+                                        <button type="submit" class="btn btn-outline-info btn-sm w-100 fw-bold">➕ Add to List</button>
+                                    </form>
+
+                                    <form method="POST" action="{% url 'rate_movie' movie.id %}" class="d-flex">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="movie_title" value="{{ movie.title }}">
+                                        <select name="score" class="form-select form-select-sm bg-dark text-white border-secondary me-1" required>
+                                            <option value="" selected disabled>Rate...</option>
+                                            <option value="5">5 ⭐</option>
+                                            <option value="4">4 ⭐</option>
+                                            <option value="3">3 ⭐</option>
+                                            <option value="2">2 ⭐</option>
+                                            <option value="1">1 ⭐</option>
+                                        </select>
+                                        <button type="submit" class="btn btn-success btn-sm fw-bold">Save</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12 text-center">
+                    <p class="lead text-muted">No movies found matching "{{ query }}". Try another search!</p>
+                </div>
+            {% endif %}
+        </div>
+
+    </div>
+
+    </body>
+</html>

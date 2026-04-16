@@ -5,29 +5,62 @@
     <title>CineSense | Welcome</title>
 </head>
 <body class="bg-dark text-white">
-    <div class="container mt-5">
+    <div class="container mt-5 max-w-md">
         <h2 class="text-center">Welcome to CineSense!</h2>
         <p class="text-center text-secondary">Tell us what you like so we can start recommending.</p>
         
-        <form method="POST" class="mt-4">
+        <form method="POST" class="mt-4" id="surveyForm">
             {% csrf_token %}
+            
             <h4>Pick Your Favorite Genres</h4>
             <div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
                 {% for genre in genres %}
                 <div class="col">
-                    <input type="checkbox" class="btn-check" id="{{ genre }}" name="genres" value="{{ genre }}">
-                    <label class="btn btn-outline-primary w-100 py-3" for="{{ genre }}">{{ genre }}</label>
+                    <input type="checkbox" class="btn-check genre-checkbox" id="{{ genre }}" name="genres" value="{{ genre }}">
+                    <label class="btn btn-outline-primary w-100 py-3 fw-bold" for="{{ genre }}">{{ genre }}</label>
                 </div>
                 {% endfor %}
             </div>
 
             <div class="mb-4">
                 <h4>Favorite Actors or Directors?</h4>
-                <input type="text" name="stars" class="form-control bg-secondary text-white border-0" placeholder="e.g. Christopher Nolan, Tom Hardy">
+                <input type="text" name="stars" id="starsInput" class="form-control form-control-lg bg-secondary text-white border-0" placeholder="e.g. Christopher Nolan, Tom Hardy">
             </div>
 
-            <button type="submit" class="btn btn-success btn-lg w-100">Finish & See Movies</button>
+            <button type="submit" id="submitBtn" class="btn btn-success btn-lg w-100 fw-bold shadow" disabled>
+                Finish & See Movies
+            </button>
         </form>
     </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const checkboxes = document.querySelectorAll('.genre-checkbox');
+            const starsInput = document.getElementById('starsInput');
+            const submitBtn = document.getElementById('submitBtn');
+
+            function checkFormValidity() {
+                // Check if at least one checkbox is ticked
+                const isAnyCheckboxChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
+                // Check if text input has at least 3 characters
+                const hasText = starsInput.value.trim().length > 2;
+
+                // Enable button if either condition is met
+                if (isAnyCheckboxChecked || hasText) {
+                    submitBtn.removeAttribute('disabled');
+                } else {
+                    submitBtn.setAttribute('disabled', 'true');
+                }
+            }
+
+            // Listen for clicks on checkboxes
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', checkFormValidity);
+            });
+
+            // Listen for typing in the text box
+            starsInput.addEventListener('input', checkFormValidity);
+        });
+    </script>
 </body>
 </html>
