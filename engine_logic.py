@@ -95,7 +95,7 @@ def get_hybrid_recommendations(user, user_query, cosine_sim=cosine_sim):
     """
     # 1. NORMALIZE USER QUERY
     # Turns "Chris Evans" into "chrisevans" to match the metadata soup
-    normalized_query = user_query.lower().replace(" ", "")
+    normalized_query = user_query.lower()
 
     # 2. GET CONTENT-BASED BASELINE (Top 30)
     user_vec = count.transform([normalized_query])

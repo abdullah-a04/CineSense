@@ -3,63 +3,191 @@
 <head>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <title>CineSense | Welcome</title>
-</head>
-<body class="bg-dark text-white">
-    <div class="container mt-5 max-w-md">
-        <h2 class="text-center">Welcome to CineSense!</h2>
-        <p class="text-center text-secondary">Tell us what you like so we can start recommending.</p>
+    <style>
+        body { background-color: #121212; color: #ffffff; margin: 0; overflow-x: hidden; }
         
-        <form method="POST" class="mt-4" id="surveyForm">
-            {% csrf_token %}
-            
-            <h4>Pick Your Favorite Genres</h4>
-            <div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
-                {% for genre in genres %}
-                <div class="col">
-                    <input type="checkbox" class="btn-check genre-checkbox" id="{{ genre }}" name="genres" value="{{ genre }}">
-                    <label class="btn btn-outline-primary w-100 py-3 fw-bold" for="{{ genre }}">{{ genre }}</label>
+        /* --- Cinematic Welcome Screen --- */
+        #welcome-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: #0a0a0a; z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 1.5s ease-in-out, visibility 1.5s;
+        }
+        .fade-text { opacity: 0; animation: fadeTextIn 2s forwards; }
+        .delay-1 { animation-delay: 1.5s; }
+        @keyframes fadeTextIn { to { opacity: 1; transform: translateY(-10px); } }
+
+        /* --- Survey Styles --- */
+        #main-survey-container { opacity: 0; transition: opacity 1.5s ease-in-out; }
+        .survey-step { display: none; animation: fadeInStep 0.4s ease-in-out; }
+        .survey-step.active { display: block; }
+        
+        .btn-check:checked + .btn-outline-info {
+            background-color: #0dcaf0; color: #000; border-color: #0dcaf0; transform: scale(1.02);
+        }
+        .custom-chip { border-radius: 12px; transition: all 0.2s; }
+        .custom-chip:hover { transform: translateY(-2px); }
+        
+        @keyframes fadeInStep { 
+            from { opacity: 0; transform: translateX(20px); } 
+            to { opacity: 1; transform: translateX(0); } 
+        }
+    </style>
+</head>
+<body>
+
+    <div id="welcome-overlay">
+        <h1 class="display-3 fw-bold text-info fade-text text-center px-3">
+            Welcome to CineSense, <span class="text-white">{{ request.user.username|title }}</span>!
+        </h1>
+        <p class="lead text-secondary fade-text delay-1 text-center mt-4 px-3 fs-4">
+            This is your personal hybrid recommendation system.
+        </p>
+    </div>
+
+    <div class="container mt-5" id="main-survey-container" style="max-width: 800px;">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold text-info">Profile Setup</h2>
+            <p class="text-secondary">Let's build your cinematic DNA.</p>
+        </div>
+
+        <div class="bg-dark p-4 p-md-5 rounded shadow-lg border border-secondary">
+            <div class="progress mb-5 bg-secondary" style="height: 6px;">
+                <div id="survey-progress" class="progress-bar bg-info" style="width: 12.5%; transition: width 0.4s;"></div>
+            </div>
+
+            <form method="POST" id="surveyForm">
+                {% csrf_token %}
+                
+                <div class="survey-step active" id="step-1">
+                    <h3 class="mb-4 text-center">🎬 Pick Your Favorite Genres</h3>
+                    <div class="row row-cols-2 row-cols-md-4 g-3">
+                        {% for genre in genres %}
+                        <div class="col">
+                            <input type="checkbox" class="btn-check" id="genre-{{ genre }}" name="genres" value="{{ genre }}">
+                            <label class="btn btn-outline-info w-100 py-3 fw-bold custom-chip" for="genre-{{ genre }}">{{ genre }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
-                {% endfor %}
-            </div>
 
-            <div class="mb-4">
-                <h4>Favorite Actors or Directors?</h4>
-                <input type="text" name="stars" id="starsInput" class="form-control form-control-lg bg-secondary text-white border-0" placeholder="e.g. Christopher Nolan, Tom Hardy">
-            </div>
+                <div class="survey-step" id="step-2">
+                    <h3 class="mb-4 text-center">📅 Pick your favorite era of cinema</h3>
+                    <div class="d-grid gap-3 max-w-md mx-auto" style="max-width: 400px;">
+                        <input type="radio" class="btn-check" id="era-modern" name="era" value="Modern">
+                        <label class="btn btn-outline-info py-3 custom-chip" for="era-modern">Modern (2015 - Present)</label>
+                        <input type="radio" class="btn-check" id="era-2000s" name="era" value="2000s">
+                        <label class="btn btn-outline-info py-3 custom-chip" for="era-2000s">The 2000s / Early 2010s</label>
+                        <input type="radio" class="btn-check" id="era-90s" name="era" value="90s">
+                        <label class="btn btn-outline-info py-3 custom-chip" for="era-90s">90s Classics</label>
+                        <input type="radio" class="btn-check" id="era-classic" name="era" value="Classic">
+                        <label class="btn btn-outline-info py-3 custom-chip" for="era-classic">Old School Hollywood</label>
+                    </div>
+                </div>
 
-            <button type="submit" id="submitBtn" class="btn btn-success btn-lg w-100 fw-bold shadow" disabled>
-                Finish & See Movies
-            </button>
-        </form>
+                <div class="survey-step" id="step-3">
+                    <h3 class="mb-4 text-center">⭐ Who are your top 5 actors?</h3>
+                    <div class="mx-auto" style="max-width: 500px;">
+                        <input type="text" name="actor1" class="form-control form-control-lg bg-black text-white border-secondary mb-2" placeholder="1. e.g. Chris Evans">
+                        <input type="text" name="actor2" class="form-control form-control-lg bg-black text-white border-secondary mb-2" placeholder="2. e.g. Scarlett Johansson">
+                        <input type="text" name="actor3" class="form-control form-control-lg bg-black text-white border-secondary mb-2" placeholder="3. e.g. Denzel Washington">
+                        <input type="text" name="actor4" class="form-control form-control-lg bg-black text-white border-secondary mb-2" placeholder="4. e.g. Florence Pugh">
+                        <input type="text" name="actor5" class="form-control form-control-lg bg-black text-white border-secondary mb-2" placeholder="5. e.g. Oscar Isaac">
+                    </div>
+                </div>
+
+                <div class="survey-step" id="step-4">
+                    <h3 class="mb-4 text-center">🎥 Top 3 Favorite Directors?</h3>
+                    <div class="mx-auto" style="max-width: 500px;">
+                        <input type="text" name="director1" class="form-control form-control-lg bg-black text-white border-secondary mb-2" placeholder="1. e.g. Christopher Nolan">
+                        <input type="text" name="director2" class="form-control form-control-lg bg-black text-white border-secondary mb-2" placeholder="2. e.g. Greta Gerwig">
+                        <input type="text" name="director3" class="form-control form-control-lg bg-black text-white border-secondary mb-2" placeholder="3. e.g. Denis Villeneuve">
+                    </div>
+                </div>
+
+                <div class="survey-step" id="step-5">
+                    <h3 class="mb-4 text-center">🎨 Animation vs. Live Action?</h3>
+                    <div class="d-grid gap-3 mx-auto" style="max-width: 400px;">
+                        <input type="radio" class="btn-check" id="anim-live" name="animation" value="Live Action Only">
+                        <label class="btn btn-outline-info py-3 custom-chip" for="anim-live">Live Action Mostly</label>
+                        <input type="radio" class="btn-check" id="anim-both" name="animation" value="Both">
+                        <label class="btn btn-outline-info py-3 custom-chip" for="anim-both">I love both equally</label>
+                        <input type="radio" class="btn-check" id="anim-only" name="animation" value="Animation">
+                        <label class="btn btn-outline-info py-3 custom-chip" for="anim-only">Animation Enthusiast</label>
+                    </div>
+                </div>
+
+                <div class="survey-step" id="step-6">
+                    <h3 class="mb-4 text-center">🌍 Foreign Films & Subtitles?</h3>
+                    <div class="d-grid gap-3 mx-auto" style="max-width: 400px;">
+                        <input type="radio" class="btn-check" id="lang-eng" name="language" value="English Only">
+                        <label class="btn btn-outline-info py-3 custom-chip" for="lang-eng">English Only please</label>
+                        <input type="radio" class="btn-check" id="lang-sub" name="language" value="Subtitles Fine">
+                        <label class="btn btn-outline-info py-3 custom-chip" for="lang-sub">I don't mind subtitles</label>
+                    </div>
+                </div>
+
+                <div class="survey-step" id="step-7">
+                    <h3 class="mb-4 text-center">🏆 The Masterpieces</h3>
+                    <p class="text-center text-secondary mb-4">What are your top 3 movies of all time?</p>
+                    <div class="mx-auto" style="max-width: 500px;">
+                        <input type="text" name="movie1" class="form-control form-control-lg bg-black text-white border-secondary mb-2" placeholder="1. e.g. The Matrix">
+                        <input type="text" name="movie2" class="form-control form-control-lg bg-black text-white border-secondary mb-2" placeholder="2. e.g. Goodfellas">
+                        <input type="text" name="movie3" class="form-control form-control-lg bg-black text-white border-secondary mb-2" placeholder="3. e.g. Parasite">
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between mt-5 pt-3 border-top border-secondary">
+                    <button type="button" id="prevBtn" class="btn btn-outline-light px-4 invisible" onclick="changeStep(-1)">Back</button>
+                    <button type="button" id="nextBtn" class="btn btn-info px-5 fw-bold" onclick="changeStep(1)">Next</button>
+                    <button type="submit" id="submitBtn" class="btn btn-success px-5 fw-bold d-none">Generate My Dashboard</button>
+                </div>
+
+            </form>
+        </div>
     </div>
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            const checkboxes = document.querySelectorAll('.genre-checkbox');
-            const starsInput = document.getElementById('starsInput');
-            const submitBtn = document.getElementById('submitBtn');
+            
+            // --- 1. Welcome Screen Logic ---
+            const welcomeOverlay = document.getElementById('welcome-overlay');
+            const surveyContainer = document.getElementById('main-survey-container');
 
-            function checkFormValidity() {
-                // Check if at least one checkbox is ticked
-                const isAnyCheckboxChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
-                // Check if text input has at least 3 characters
-                const hasText = starsInput.value.trim().length > 2;
+            // Wait 6 seconds, then fade out the welcome screen
+            setTimeout(() => {
+                welcomeOverlay.style.opacity = '0';
+                
+                // Once faded out, hide it completely and show the survey
+                setTimeout(() => {
+                    welcomeOverlay.style.visibility = 'hidden';
+                    surveyContainer.style.opacity = '1';
+                }, 1500); // Wait 1.5s for CSS opacity transition to finish
+            }, 6000); 
 
-                // Enable button if either condition is met
-                if (isAnyCheckboxChecked || hasText) {
-                    submitBtn.removeAttribute('disabled');
+            // --- 2. Survey Navigation Logic ---
+            let currentStep = 1;
+            const totalSteps = 7; // We reduced this to 7 since we removed 'Vibes'
+
+            window.changeStep = function(direction) {
+                document.getElementById(`step-${currentStep}`).classList.remove('active');
+                currentStep += direction;
+                document.getElementById(`step-${currentStep}`).classList.add('active');
+
+                // Update Progress Bar
+                document.getElementById('survey-progress').style.width = `${(currentStep / totalSteps) * 100}%`;
+
+                // Toggle Buttons
+                document.getElementById('prevBtn').classList.toggle('invisible', currentStep === 1);
+                
+                if (currentStep === totalSteps) {
+                    document.getElementById('nextBtn').classList.add('d-none');
+                    document.getElementById('submitBtn').classList.remove('d-none');
                 } else {
-                    submitBtn.setAttribute('disabled', 'true');
+                    document.getElementById('nextBtn').classList.remove('d-none');
+                    document.getElementById('submitBtn').classList.add('d-none');
                 }
-            }
-
-            // Listen for clicks on checkboxes
-            checkboxes.forEach(checkbox => {
-                checkbox.addEventListener('change', checkFormValidity);
-            });
-
-            // Listen for typing in the text box
-            starsInput.addEventListener('input', checkFormValidity);
+            };
         });
     </script>
 </body>

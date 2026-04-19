@@ -6,10 +6,17 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    favorite_genres = models.TextField(blank=True)
-    favorite_actors = models.TextField(blank=True)
     survey_completed = models.BooleanField(default=False)
-
+    
+    # The 7 Elicitation Fields
+    favorite_genres = models.TextField(blank=True)
+    preferred_era = models.CharField(max_length=50, blank=True)
+    favorite_actors = models.TextField(blank=True)
+    favorite_directors = models.TextField(blank=True)
+    animation_pref = models.CharField(max_length=50, blank=True)
+    language_pref = models.CharField(max_length=50, blank=True)
+    favorite_movie = models.CharField(max_length=255, blank=True)
+    
     def __str__(self):
         return f"{self.user.username}'s Profile"
 

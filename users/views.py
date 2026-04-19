@@ -26,45 +26,74 @@ def register(request):
 @login_required
 def preference_survey(request):
     if request.method == 'POST':
-        # Capture data from the frontend form
-        selected_genres = request.POST.getlist('genres')
-        favorite_stars = request.POST.get('stars', '')
-
-        # Get the current user's profile
         profile = request.user.profile
         
-        # Save the data to the profile
-        profile.favorite_genres = ",".join(selected_genres)
-        profile.favorite_actors = favorite_stars
+        # 1. Catch all the data from the new HTML form
+        genres = request.POST.get('genres', '')
+        era = request.POST.get('era', '')
+        
+        actor1 = request.POST.get('actor1', '').replace(" ", "")
+        actor2 = request.POST.get('actor2', '').replace(" ", "")
+        actor3 = request.POST.get('actor3', '').replace(" ", "")
+        actor4 = request.POST.get('actor4', '').replace(" ", "")
+        actor5 = request.POST.get('actor5', '').replace(" ", "")
+        actors_list = [a for a in [actor1, actor2, actor3, actor4, actor5] if a]
+        
+        # Directors (Combine the 2 text boxes)
+        director1 = request.POST.get('director1', '').replace(" ", "")
+        director2 = request.POST.get('director2', '').replace(" ", "")
+        director3 = request.POST.get('director3', '').replace(" ", "")
+        directors_list = [d for d in [director1, director2, director3] if d]
+
+        # MOVIES (Now catches 3 - Note: We do NOT remove spaces for movie titles)
+        movie1 = request.POST.get('movie1', '')
+        movie2 = request.POST.get('movie2', '')
+        movie3 = request.POST.get('movie3', '')
+        movies_list = [m for m in [movie1, movie2, movie3] if m]
+        
+        # 2. Save it all safely to the Database Profile
+        profile.favorite_genres = genres
+        profile.preferred_era = era
+        profile.favorite_actors = " ".join(actors_list) # We join them with a space to match the "soup" format in engine_logic.py
+        profile.favorite_directors = " ".join(directors_list)
+        profile.favorite_movie = " ".join(movies_list)
+        
         profile.survey_completed = True
         profile.save()
-
+        
+        messages.success(request, "Profile built successfully! Analyzing your cinematic DNA...")
         return redirect('home')
 
-    # List of genres to display as options on the page
-    genres_list = [
-        'Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 
-        'Drama', 'Family', 'Fantasy', 'Horror', 'Mystery', 
-        'Romance', 'Sci-Fi', 'Thriller'
-    ]
-    
+    # GET request - render the blank form
+    genres_list = ['Action', 'Comedy', 'Drama', 'Sci-Fi', 'Horror', 'Romance', 'Thriller', 'Animation', 'Fantasy', 'Crime', 'Mystery', 'Adventure']
     return render(request, 'users/survey.html', {'genres': genres_list})
 
-
-@login_required 
+@login_required
 def home(request):
-    user_profile = request.user.profile
+    profile = request.user.profile
     
-    if not user_profile.survey_completed:
+    # Check if they need to take the survey
+    if not profile.survey_completed:
         return redirect('preference_survey')
-
-    user_query = f"{user_profile.favorite_genres} {user_profile.favorite_actors}"
+        
+    # BUILD THE MEGA QUERY: Combine all their preferences into one massive string
+    query_parts = [
+        profile.favorite_genres,
+        profile.preferred_era,
+        profile.favorite_actors,
+        profile.favorite_directors,
+        profile.favorite_movie
+    ]
+    # Filter out any blank answers and join them with a space
+    mega_query = " ".join([q for q in query_parts if q])
     
-    # THE UPGRADE: We now pass the 'request.user' AND the 'user_query' into the Hybrid Engine!
-    recommendations_df = get_hybrid_recommendations(request.user, user_query)
-    recommendations = recommendations_df.to_dict('records')
+    # Feed the massive string to your AI Engine
+    recommended_df = get_hybrid_recommendations(request.user, mega_query)
     
-    return render(request, 'users/home.html', {'movies': recommendations})
+    # Convert DataFrame to dictionary for the HTML template
+    movies = recommended_df.to_dict('records')
+    
+    return render(request, 'users/home.html', {'movies': movies})
 
 @login_required
 def add_to_watchlist(request, movie_id):
