@@ -2,9 +2,14 @@
 <html>
 <head>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <title>CineSense | Your Recommendations</title>
     <style>
-        /* --- General Styling --- */
+        body {
+            background: linear-gradient(135deg, #050a1f 0%, #0a0514 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
         .movie-card { transition: transform 0.2s; }
         .movie-card:hover { transform: scale(1.02); z-index: 10; cursor: pointer; }
         .poster-wrapper { position: relative; overflow: hidden; background-color: #000; height: 350px; }
@@ -16,59 +21,25 @@
         .poster-wrapper:hover .poster-overlay { opacity: 1; }
         .poster-desc { font-size: 0.85rem; display: -webkit-box; -webkit-line-clamp: 10; -webkit-box-orient: vertical; overflow: hidden; }
 
-        /* --- Scroll Container & Arrows --- */
-        .scroll-container {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
+        .scroll-container { position: relative; display: flex; align-items: center; }
         .scrolling-wrapper {
-            display: flex !important;
-            flex-wrap: nowrap !important;
-            overflow-x: auto !important;
-            scroll-behavior: smooth;
-            gap: 20px;
-            padding: 10px 0;
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none;  /* IE/Edge */
+            display: flex !important; flex-wrap: nowrap !important; overflow-x: auto !important;
+            scroll-behavior: smooth; gap: 20px; padding: 10px 0;
+            scrollbar-width: none; -ms-overflow-style: none; 
         }
-        .scrolling-wrapper::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+        .scrolling-wrapper::-webkit-scrollbar { display: none; }
+        .scroll-item { flex: 0 0 auto !important; width: 240px; }
 
-        .scroll-item {
-            flex: 0 0 auto !important;
-            width: 240px;
-        }
-
-        /* The Navigation Arrows */
         .nav-btn {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 45px;
-            height: 45px;
-            background: rgba(0, 0, 0, 0.7);
-            color: #0dcaf0;
-            border: 2px solid #0dcaf0;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 30;
-            transition: all 0.3s ease;
-            font-size: 1.5rem;
-            font-weight: bold;
+            position: absolute; top: 50%; transform: translateY(-50%); width: 45px; height: 45px;
+            background: rgba(0, 0, 0, 0.7); color: #0dcaf0; border: 2px solid #0dcaf0; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 30;
+            transition: all 0.3s ease; font-size: 1.5rem; font-weight: bold;
         }
-        .nav-btn:hover {
-            background: #0dcaf0;
-            color: #000;
-            transform: translateY(-50%) scale(1.1);
-        }
+        .nav-btn:hover { background: #0dcaf0; color: #000; transform: translateY(-50%) scale(1.1); }
         .btn-left { left: -25px; }
         .btn-right { right: -25px; }
 
-        /* Hide buttons if on a small screen (where touch swipe is preferred) */
         @media (max-width: 768px) {
             .nav-btn { display: none; }
             .btn-left { left: 0; }
@@ -76,7 +47,7 @@
         }
     </style>
 </head>
-<body class="bg-dark text-white">
+<body class="text-white">
     <div class="container mt-5">
         
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
@@ -102,6 +73,51 @@
 
         <hr class="bg-secondary mb-5">
 
+        {% if top_matches %}
+            {% with hero_movie=top_matches|first %}
+            <div class="card bg-dark text-white border-0 shadow-lg mb-5 position-relative overflow-hidden" style="border-radius: 15px; height: 500px;" id="hero-billboard">
+                
+                <div class="position-absolute top-0 start-0 w-100 h-100" id="hero-bg" style="background-size: cover; background-position: center; opacity: 0.6;"></div>
+                <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(to right, rgba(17,17,17,1) 10%, rgba(17,17,17,0.7) 50%, rgba(17,17,17,0) 100%);"></div>
+
+                <div class="card-img-overlay d-flex flex-column justify-content-center p-5" style="max-width: 600px; z-index: 2;">
+                    <span class="badge bg-warning text-dark mb-3 px-3 py-2 fs-6 align-self-start shadow">#1 Top Match for You</span>
+                    <h1 class="card-title fw-bold display-4 mb-3 text-truncate">{{ hero_movie.title }}</h1>
+                    <p class="card-text lead text-light mb-4" id="hero-overview">Loading description...</p>
+                    
+                    <div class="d-flex gap-3">
+                        <button class="btn btn-light btn-lg fw-bold px-4 rounded-pill shadow" onclick="playTrailer({{ hero_movie.id }})"> 
+                            ▶ Watch Trailer
+                        </button>
+                        
+                        <form method="POST" action="{% url 'add_to_watchlist' hero_movie.id %}" class="ajax-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="movie_title" value="{{ hero_movie.title }}">
+                            <button type="submit" class="btn btn-outline-light btn-lg fw-bold px-4 rounded-pill bg-dark bg-opacity-50">
+                                ➕ Add to List
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endwith %}
+        {% endif %}
+
+        <div class="modal fade" id="trailerModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content bg-dark border-secondary shadow-lg">
+                    <div class="modal-header border-0 pb-0">
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-0">
+                        <div class="ratio ratio-16x9">
+                            <iframe id="trailerFrame" src="" allowfullscreen allow="autoplay"></iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <h3 class="mb-2 text-success fw-bold">🎯 Spot-On Matches</h3>
         <div class="scroll-container mb-5">
             <div class="nav-btn btn-left" onclick="scrollGrid('hard-row', -800)">&#10094;</div>
@@ -115,12 +131,12 @@
                             <div class="card-body d-flex flex-column">
                                 <h6 class="card-title fw-bold text-truncate" title="{{ movie.title }}">{{ movie.title }}</h6>
                                 <div class="mt-auto">
-                                    <form method="POST" action="{% url 'add_to_watchlist' movie.id %}" class="mb-2">
+                                    <form method="POST" action="{% url 'add_to_watchlist' movie.id %}" class="mb-2 ajax-form">
                                         {% csrf_token %}
                                         <input type="hidden" name="movie_title" value="{{ movie.title }}">
                                         <button type="submit" class="btn btn-outline-info btn-sm w-100 fw-bold">➕ Add</button>
                                     </form>
-                                    <form method="POST" action="{% url 'rate_movie' movie.id %}" class="d-flex">
+                                    <form method="POST" action="{% url 'rate_movie' movie.id %}" class="d-flex ajax-form">
                                         {% csrf_token %}
                                         <input type="hidden" name="movie_title" value="{{ movie.title }}">
                                         <select name="score" class="form-select form-select-sm bg-dark text-white border-secondary me-1" required>
@@ -152,12 +168,12 @@
                             <div class="card-body d-flex flex-column">
                                 <h6 class="card-title fw-bold text-truncate" title="{{ movie.title }}">{{ movie.title }}</h6>
                                 <div class="mt-auto">
-                                    <form method="POST" action="{% url 'add_to_watchlist' movie.id %}" class="mb-2">
+                                    <form method="POST" action="{% url 'add_to_watchlist' movie.id %}" class="mb-2 ajax-form">
                                         {% csrf_token %}
                                         <input type="hidden" name="movie_title" value="{{ movie.title }}">
                                         <button type="submit" class="btn btn-outline-info btn-sm w-100 fw-bold">➕ Add</button>
                                     </form>
-                                    <form method="POST" action="{% url 'rate_movie' movie.id %}" class="d-flex">
+                                    <form method="POST" action="{% url 'rate_movie' movie.id %}" class="d-flex ajax-form">
                                         {% csrf_token %}
                                         <input type="hidden" name="movie_title" value="{{ movie.title }}">
                                         <select name="score" class="form-select form-select-sm bg-dark text-white border-secondary me-1" required>
@@ -180,13 +196,14 @@
     <script>
         const TMDB_API_KEY = 'dec1382fbb89751f2f231fee7ec947e5';
 
-        // --- SCROLL FUNCTION ---
         function scrollGrid(rowId, distance) {
             const row = document.getElementById(rowId);
             row.scrollBy({ left: distance, behavior: 'smooth' });
         }
 
         document.addEventListener("DOMContentLoaded", function() {
+            
+            // --- POPULATE POSTERS ---
             const posterDivs = document.querySelectorAll('[id^="poster-"]');
             posterDivs.forEach(div => {
                 const movieId = div.id.split('-').pop();
@@ -207,6 +224,74 @@
                     });
             });
 
+            // --- HERO BILLBOARD LOGIC ---
+            {% if top_matches %}
+                const heroMovieId = {{ top_matches.0.id }};
+                fetch(`https://api.themoviedb.org/3/movie/${heroMovieId}?api_key=${TMDB_API_KEY}&language=en-US`)
+                    .then(res => res.json())
+                    .then(data => {
+                        const heroBg = document.getElementById('hero-bg');
+                        if (data.backdrop_path) {
+                            heroBg.style.backgroundImage = `url('https://image.tmdb.org/t/p/original${data.backdrop_path}')`;
+                            heroBg.style.filter = 'none'; 
+                            heroBg.style.transform = 'none';
+                        } else if (data.poster_path) {
+                            heroBg.style.backgroundImage = `url('https://image.tmdb.org/t/p/w500${data.poster_path}')`;
+                            heroBg.style.backgroundPosition = 'center 20%';
+                            heroBg.style.filter = 'blur(4px)';
+                            heroBg.style.transform = 'scale(1.1)';
+                        }
+
+                        if (data.overview) {
+                            const overview = data.overview.length > 250 ? data.overview.substring(0, 250) + '...' : data.overview;
+                            document.getElementById('hero-overview').innerText = overview;
+                        } else {
+                            document.getElementById('hero-overview').innerText = "Description unavailable.";
+                        }
+                    });
+            {% endif %}
+
+            // --- THE NEW BULLETPROOF AJAX LOGIC ---
+            const actionForms = document.querySelectorAll('.ajax-form');
+            actionForms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault(); // HALTS THE PAGE REFRESH
+
+                    const formData = new FormData(this);
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    const originalText = submitBtn.innerHTML;
+
+                    submitBtn.innerHTML = '⏳...';
+                    submitBtn.disabled = true;
+
+                    fetch(this.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            submitBtn.innerHTML = '✅ Saved';
+                            if (this.action.includes('add_to_watchlist')) {
+                                submitBtn.classList.replace('btn-outline-info', 'btn-info');
+                                submitBtn.classList.replace('btn-outline-light', 'btn-light'); // For Hero button
+                                submitBtn.classList.add('text-black');
+                            }
+                        } else {
+                            throw new Error('Network error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        submitBtn.innerHTML = '❌ Error';
+                        setTimeout(() => {
+                            submitBtn.innerHTML = originalText;
+                            submitBtn.disabled = false;
+                        }, 2000);
+                    });
+                });
+            });
+
             setTimeout(() => {
                 document.querySelectorAll('.alert').forEach(a => {
                     a.style.transition = "opacity 0.5s ease"; a.style.opacity = "0";
@@ -214,6 +299,27 @@
                 });
             }, 3000);
         });
+
+        // --- PLAY TRAILER FUNCTION ---
+        function playTrailer(movieId) {
+            fetch(`https://api.themoviedb.org/3/movie/${movieId}/videos?api_key=${TMDB_API_KEY}`)
+                .then(res => res.json())
+                .then(data => {
+                    const trailer = data.results.find(v => v.type === 'Trailer' && v.site === 'YouTube');
+                    if (trailer) {
+                        const iframe = document.getElementById('trailerFrame');
+                        iframe.src = `https://www.youtube.com/embed/${trailer.key}?autoplay=1`;
+                        const modal = new bootstrap.Modal(document.getElementById('trailerModal'));
+                        modal.show();
+
+                        document.getElementById('trailerModal').addEventListener('hidden.bs.modal', function () {
+                            iframe.src = "";
+                        });
+                    } else {
+                        alert("Trailer not available for this title.");
+                    }
+                });
+        }
     </script>
 </body>
 </html>

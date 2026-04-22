@@ -97,6 +97,8 @@ def preference_survey(request):
         'directors': random_directors # Pass the 8 random directors to the HTML
     })
 
+import random
+
 @login_required
 def home(request):
     profile = request.user.profile
@@ -106,63 +108,54 @@ def home(request):
         
     # --- 1. THE "HARD" QUERY ---
     hard_query_parts = [
-        profile.favorite_genres,
-        profile.preferred_era,
-        profile.favorite_actors,
-        profile.favorite_directors,
-        profile.favorite_movie
+        profile.favorite_genres, profile.preferred_era, profile.favorite_actors,
+        profile.favorite_directors, profile.favorite_movie
     ]
     hard_query = " ".join([q for q in hard_query_parts if q])
     
-    # --- 2. THE "SOFT" QUERY ---
-    soft_query_parts = [
-        profile.favorite_genres,
-        profile.preferred_era
-    ]
-    soft_query = " ".join([q for q in soft_query_parts if q])
+    # --- 2. THE "SOFT" QUERY (Genre Roulette) ---
+    user_genres = [g.strip() for g in profile.favorite_genres.split(',')] if profile.favorite_genres else []
+    random_discovery_genre = random.choice(user_genres) if user_genres else ""
+    soft_query = f"{random_discovery_genre} {profile.preferred_era}"
     
-    # --- RUN THE AI ENGINE TWICE ---
+    # --- RUN ENGINES ---
     hard_df = get_hybrid_recommendations(request.user, hard_query)
     soft_df = get_hybrid_recommendations(request.user, soft_query)
     
     all_hard = hard_df.to_dict('records')
     all_soft = soft_df.to_dict('records')
     
-    # --- 🎲 1. THE STOCHASTIC HARD MATCHES (10 Movies) ---
-    # Increased the pool to 30 so there is still plenty of room to shuffle
-    hard_pool = all_hard[:30]
-    
-    # Now sampling 10 movies
+    # --- 🎲 SPOT-ON MATCHES (Top 40 Pool) ---
+    hard_pool = all_hard[:40]
     if len(hard_pool) >= 10:
         top_matches = random.sample(hard_pool, 10)
     else:
         top_matches = hard_pool
+        random.shuffle(top_matches)
         
-    shown_movie_ids = [movie['id'] for movie in top_matches]
+    shown_movie_ids = [m['id'] for m in top_matches]
     
-    # --- 🎲 2. THE STOCHASTIC SOFT MATCHES (10 Movies) ---
-    # Increased the soft pool to 50 remaining movies
-    soft_pool = [m for m in all_soft if m['id'] not in shown_movie_ids][:50]
+    # --- ☢️ DISCOVERY ZONE (Nuclear Randomizer) ---
+    # Grab the ENTIRE list of soft matches, not just the top slice
+    valid_soft = [m for m in all_soft if m['id'] not in shown_movie_ids]
     
-    if len(soft_pool) >= 10:
-        soft_matches = random.sample(soft_pool, 10)
+    if len(valid_soft) >= 10:
+        # Pick 10 totally random movies from anywhere in the list
+        soft_matches = random.sample(valid_soft, 10)
     else:
-        soft_matches = soft_pool
-        # Update the math to calculate how many we need to reach 10
-        needed = 10 - len(soft_matches)
-        more_hard = [m for m in all_hard if m['id'] not in shown_movie_ids]
-        soft_matches.extend(more_hard[:needed])
-        
-    # Absolute Emergency Fallback
-    if len(soft_matches) == 0:
-        soft_matches = all_hard[:10]
-        
+        # FAIL-SAFE: If the database is tiny, combine lists to force 10 movies
+        remaining_hard = [m for m in all_hard if m['id'] not in shown_movie_ids]
+        combined = valid_soft + remaining_hard
+        if len(combined) >= 10:
+            soft_matches = random.sample(combined, 10)
+        else:
+            soft_matches = combined
+            random.shuffle(soft_matches)
+            
     context = {
         'top_matches': top_matches,
         'soft_matches': soft_matches,
-        'profile': profile,
     }
-    
     return render(request, 'users/home.html', context)
 
 @login_required

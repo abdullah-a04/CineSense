@@ -1,11 +1,44 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <title>Profile Setup - CineSense</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <title>CineSense | Welcome</title>
     <style>
-        body { background-color: #121212; color: #ffffff; margin: 0; overflow-x: hidden; }
-        
+        /* --- Base Setup --- */
+        body, html { 
+            margin: 0; padding: 0; height: 100%; overflow: hidden; 
+            background-color: #111; color: white; font-family: sans-serif; 
+        }
+
+        /* --- The Netflix-Style Animated Grid --- */
+        #background-grid {
+            position: absolute; top: -50%; left: -10%; width: 120%; height: 200%;
+            display: flex; gap: 15px; 
+            transform: rotate(-8deg);
+            z-index: 0;
+        }
+
+        .scroll-column {
+            display: flex; flex-direction: column; gap: 15px; width: 220px;
+            animation: scroll-up 40s linear infinite;
+        }
+
+        .scroll-column:nth-child(even) {
+            animation: scroll-down 45s linear infinite;
+        }
+
+        .poster-img { width: 100%; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.8); }
+
+        @keyframes scroll-up { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }
+        @keyframes scroll-down { 0% { transform: translateY(-50%); } 100% { transform: translateY(0); } }
+
+        /* --- The Dark Overlay --- */
+        .overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.7) 50%, rgba(0,0,0,0.95) 100%);
+            z-index: 1;
+        }
+
         /* --- Cinematic Welcome Screen --- */
         #welcome-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -17,16 +50,45 @@
         .delay-1 { animation-delay: 1.5s; }
         @keyframes fadeTextIn { to { opacity: 1; transform: translateY(-10px); } }
 
-        /* --- Survey Styles --- */
-        #main-survey-container { opacity: 0; transition: opacity 1.5s ease-in-out; }
+        /* --- The Frosted Glass Survey Box --- */
+        #main-survey-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2;
+            opacity: 0; transition: opacity 1.5s ease-in-out;
+        }
+
+        .glass-card {
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(16px);           
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 15px; padding: 40px; width: 90%; max-width: 800px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.9);
+            max-height: 85vh; 
+            overflow-y: auto; 
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+        }
+        .glass-card::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+
+        /* --- Form Elements Overrides --- */
+        .form-control { 
+            background: rgba(0,0,0,0.5) !important; border: 1px solid #444 !important; color: white !important; 
+        }
+        .form-control:focus { 
+            background: rgba(0,0,0,0.7) !important; border-color: #0dcaf0 !important; box-shadow: none; 
+        }
+        ::placeholder { color: #888 !important; }
+
+        /* --- Custom Chips & Survey Logic --- */
         .survey-step { display: none; animation: fadeInStep 0.4s ease-in-out; }
         .survey-step.active { display: block; }
         
         .btn-check:checked + .btn-outline-info {
             background-color: #0dcaf0; color: #000; border-color: #0dcaf0; transform: scale(1.02);
         }
-        .custom-chip { border-radius: 12px; transition: all 0.2s; }
-        .custom-chip:hover { transform: translateY(-2px); }
+        .custom-chip { border-radius: 12px; transition: all 0.2s; background: rgba(0,0,0,0.3); backdrop-filter: blur(4px);}
+        .custom-chip:hover { transform: translateY(-2px); background: rgba(0,0,0,0.6); }
         
         @keyframes fadeInStep { 
             from { opacity: 0; transform: translateX(20px); } 
@@ -35,6 +97,9 @@
     </style>
 </head>
 <body>
+
+    <div id="background-grid"></div>
+    <div class="overlay"></div>
 
     <div id="welcome-overlay">
         <h1 class="display-3 fw-bold text-info fade-text text-center px-3">
@@ -45,15 +110,16 @@
         </p>
     </div>
 
-    <div class="container mt-5" id="main-survey-container" style="max-width: 800px;">
-        <div class="text-center mb-5">
+    <div id="main-survey-container">
+        
+        <div class="text-center mb-4 z-3">
             <h2 class="fw-bold text-info">Profile Setup</h2>
             <p class="text-secondary">Let's build your cinematic DNA.</p>
         </div>
 
-        <div class="bg-dark p-4 p-md-5 rounded shadow-lg border border-secondary">
-            <div class="progress mb-5 bg-secondary" style="height: 6px;">
-                <div id="survey-progress" class="progress-bar bg-info" style="width: 12.5%; transition: width 0.4s;"></div>
+        <div class="glass-card">
+            <div class="progress mb-5" style="height: 6px; background: rgba(255,255,255,0.2);">
+                <div id="survey-progress" class="progress-bar bg-info" style="width: 14.2%; transition: width 0.4s;"></div>
             </div>
 
             <form method="POST" id="surveyForm">
@@ -73,7 +139,7 @@
 
                 <div class="survey-step" id="step-2">
                     <h3 class="mb-4 text-center">📅 Pick your favorite era of cinema</h3>
-                    <div class="d-grid gap-3 max-w-md mx-auto" style="max-width: 400px;">
+                    <div class="d-grid gap-3 mx-auto" style="max-width: 400px;">
                         <input type="radio" class="btn-check" id="era-modern" name="era" value="Modern">
                         <label class="btn btn-outline-info py-3 custom-chip" for="era-modern">Modern (2015 - Present)</label>
                         <input type="radio" class="btn-check" id="era-2000s" name="era" value="2000s">
@@ -88,11 +154,11 @@
                 <div class="survey-step" id="step-3">
                     <h3 class="mb-4 text-center">⭐ Who are your top 5 actors?</h3>
                     <div class="mx-auto" style="max-width: 500px;">
-                        <input type="text" name="actor1" class="form-control form-control-lg bg-black text-white border-secondary mb-2" placeholder="1. e.g. Chris Evans">
-                        <input type="text" name="actor2" class="form-control form-control-lg bg-black text-white border-secondary mb-2" placeholder="2. e.g. Scarlett Johansson">
-                        <input type="text" name="actor3" class="form-control form-control-lg bg-black text-white border-secondary mb-2" placeholder="3. e.g. Denzel Washington">
-                        <input type="text" name="actor4" class="form-control form-control-lg bg-black text-white border-secondary mb-2" placeholder="4. e.g. Florence Pugh">
-                        <input type="text" name="actor5" class="form-control form-control-lg bg-black text-white border-secondary mb-2" placeholder="5. e.g. Oscar Isaac">
+                        <input type="text" name="actor1" class="form-control form-control-lg mb-3" placeholder="1. e.g. Chris Evans">
+                        <input type="text" name="actor2" class="form-control form-control-lg mb-3" placeholder="2. e.g. Scarlett Johansson">
+                        <input type="text" name="actor3" class="form-control form-control-lg mb-3" placeholder="3. e.g. Denzel Washington">
+                        <input type="text" name="actor4" class="form-control form-control-lg mb-3" placeholder="4. e.g. Florence Pugh">
+                        <input type="text" name="actor5" class="form-control form-control-lg mb-3" placeholder="5. e.g. Oscar Isaac">
                     </div>
                 </div>
 
@@ -100,7 +166,6 @@
                     <h3 class="mb-4 text-center">🎥 Pick Your Favorite Directors</h3>
                     <p class="text-center text-secondary mb-4">Select up to 3 based on their modern masterpieces.</p>
                     <div class="row row-cols-2 row-cols-md-4 g-3 mx-auto">
-                        
                         {% for d in directors %}
                         <div class="col">
                             <input type="checkbox" class="btn-check" id="dir-{{ d.id }}" name="directors" value="{{ d.value }}">
@@ -110,7 +175,6 @@
                             </label>
                         </div>
                         {% endfor %}
-                        
                     </div>
                 </div>
 
@@ -140,9 +204,9 @@
                     <h3 class="mb-4 text-center">🏆 The Masterpieces</h3>
                     <p class="text-center text-secondary mb-4">What are your top 3 movies of all time?</p>
                     <div class="mx-auto" style="max-width: 500px;">
-                        <input type="text" name="movie1" class="form-control form-control-lg bg-black text-white border-secondary mb-2" placeholder="1. e.g. The Matrix">
-                        <input type="text" name="movie2" class="form-control form-control-lg bg-black text-white border-secondary mb-2" placeholder="2. e.g. Goodfellas">
-                        <input type="text" name="movie3" class="form-control form-control-lg bg-black text-white border-secondary mb-2" placeholder="3. e.g. Parasite">
+                        <input type="text" name="movie1" class="form-control form-control-lg mb-3" placeholder="1. e.g. The Matrix">
+                        <input type="text" name="movie2" class="form-control form-control-lg mb-3" placeholder="2. e.g. Goodfellas">
+                        <input type="text" name="movie3" class="form-control form-control-lg mb-3" placeholder="3. e.g. Parasite">
                     </div>
                 </div>
 
@@ -157,36 +221,59 @@
     </div>
 
     <script>
+        const TMDB_API_KEY = 'dec1382fbb89751f2f231fee7ec947e5';
+        const grid = document.getElementById('background-grid');
+        const columns = 8; 
+        const postersPerColumn = 10; 
+
+        // Grabbing 'top_rated' movies so the background art differs from the login page!
+        fetch(`https://api.themoviedb.org/3/movie/top_rated?api_key=${TMDB_API_KEY}&language=en-US&page=1`)
+            .then(response => response.json())
+            .then(data => {
+                let movies = data.results.filter(m => m.poster_path);
+                while(movies.length < columns * postersPerColumn) { movies = movies.concat(movies); }
+
+                let movieIndex = 0;
+                for (let i = 0; i < columns; i++) {
+                    const colDiv = document.createElement('div');
+                    colDiv.className = 'scroll-column';
+                    for (let j = 0; j < postersPerColumn; j++) {
+                        const img = document.createElement('img');
+                        img.src = `https://image.tmdb.org/t/p/w500${movies[movieIndex % movies.length].poster_path}`;
+                        img.className = 'poster-img';
+                        colDiv.appendChild(img);
+                        movieIndex++;
+                    }
+                    colDiv.innerHTML += colDiv.innerHTML;
+                    grid.appendChild(colDiv);
+                }
+            })
+            .catch(err => console.error("Error loading background:", err));
+
+        // --- Your Custom UI Logic ---
         document.addEventListener("DOMContentLoaded", function() {
-            
-            // --- 1. Welcome Screen Logic ---
             const welcomeOverlay = document.getElementById('welcome-overlay');
             const surveyContainer = document.getElementById('main-survey-container');
 
-            // Wait 6 seconds, then fade out the welcome screen
+            // Fade out the welcome screen, reveal the glass card underneath
             setTimeout(() => {
                 welcomeOverlay.style.opacity = '0';
-                
-                // Once faded out, hide it completely and show the survey
                 setTimeout(() => {
                     welcomeOverlay.style.visibility = 'hidden';
                     surveyContainer.style.opacity = '1';
-                }, 1500); // Wait 1.5s for CSS opacity transition to finish
+                }, 1500); 
             }, 6000); 
 
-            // --- 2. Survey Navigation Logic ---
+            // Survey Navigation
             let currentStep = 1;
-            const totalSteps = 7; // We reduced this to 7 since we removed 'Vibes'
+            const totalSteps = 7; 
 
             window.changeStep = function(direction) {
                 document.getElementById(`step-${currentStep}`).classList.remove('active');
                 currentStep += direction;
                 document.getElementById(`step-${currentStep}`).classList.add('active');
 
-                // Update Progress Bar
                 document.getElementById('survey-progress').style.width = `${(currentStep / totalSteps) * 100}%`;
-
-                // Toggle Buttons
                 document.getElementById('prevBtn').classList.toggle('invisible', currentStep === 1);
                 
                 if (currentStep === totalSteps) {

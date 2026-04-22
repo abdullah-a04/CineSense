@@ -2,177 +2,280 @@
 <html>
 <head>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <title>CineSense | My List</title>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <title>CineSense | My Movies</title>
     <style>
+        body {
+            background: linear-gradient(135deg, #050a1f 0%, #0a0514 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+
         .movie-card { transition: transform 0.2s; }
-        .movie-card:hover { transform: scale(1.02); z-index: 10; }
-        
-        /* --- Cinematic Hover CSS --- */
-        .poster-wrapper {
-            position: relative;
-            overflow: hidden;
-            background-color: #000;
-        }
+        .movie-card:hover { transform: scale(1.02); z-index: 10; cursor: pointer; }
+        .poster-wrapper { position: relative; overflow: hidden; background-color: #000; height: 350px; }
         .poster-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.85);
-            color: white;
-            opacity: 0;
-            transition: opacity 0.25s ease-in-out;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.85); color: white; opacity: 0;
+            transition: opacity 0.25s ease-in-out; display: flex; align-items: center; padding: 15px;
+        }
+        .poster-wrapper:hover .poster-overlay { opacity: 1; }
+        .poster-desc { font-size: 0.85rem; display: -webkit-box; -webkit-line-clamp: 10; -webkit-box-orient: vertical; overflow: hidden; }
+
+        .scroll-container { position: relative; display: flex; align-items: center; }
+        .scrolling-wrapper {
+            display: flex !important; flex-wrap: nowrap !important; overflow-x: auto !important;
+            scroll-behavior: smooth; gap: 20px; padding: 10px 0;
+            scrollbar-width: none; -ms-overflow-style: none; 
+        }
+        .scrolling-wrapper::-webkit-scrollbar { display: none; }
+        .scroll-item { flex: 0 0 auto !important; width: 240px; }
+
+        .nav-btn {
+            position: absolute; top: 50%; transform: translateY(-50%); width: 45px; height: 45px;
+            background: rgba(0, 0, 0, 0.7); color: #0dcaf0; border: 2px solid #0dcaf0; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 30;
+            transition: all 0.3s ease; font-size: 1.5rem; font-weight: bold;
+        }
+        .nav-btn:hover { background: #0dcaf0; color: #000; transform: translateY(-50%) scale(1.1); }
+        .btn-left { left: -25px; }
+        .btn-right { right: -25px; }
+
+        /* --- THE NEW INTERACTIVE STAR RATING CSS --- */
+        .star-rating {
             display: flex;
-            align-items: center;
-            padding: 15px;
+            flex-direction: row-reverse; /* Reverses order so hover works left-to-right */
+            justify-content: flex-end;
         }
-        .poster-wrapper:hover .poster-overlay {
-            opacity: 1;
+        .star-rating input { display: none; }
+        .star-rating label {
+            font-size: 1.6rem;
+            color: #444; /* Dark gray for unselected stars */
+            cursor: pointer;
+            transition: color 0.2s;
+            margin-right: 2px;
         }
-        .poster-desc {
-            font-size: 0.85rem;
-            display: -webkit-box;
-            -webkit-line-clamp: 10;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
+        /* Fill stars with gold when checked or hovered */
+        .star-rating input:checked ~ label,
+        .star-rating label:hover,
+        .star-rating label:hover ~ label {
+            color: #ffc107; 
+        }
+        .save-status {
+            font-size: 0.8rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
     </style>
 </head>
-<body class="bg-dark text-white">
+<body class="text-white">
     <div class="container mt-5">
         
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>🍿 My Movie Vault</h1>
-            <div>
-                <a href="{% url 'home' %}" class="btn btn-outline-info me-2">Back to Dashboard</a>
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <h1 class="mb-0 text-warning fw-bold">My Movies</h1>
+            <div class="d-flex align-items-center">
+                <a href="{% url 'home' %}" class="btn btn-outline-info me-2 text-nowrap">Back to Dashboard</a>
+                <form method="post" action="{% url 'logout' %}" class="d-inline">
+                    {% csrf_token %}<button type="submit" class="btn btn-danger">Logout</button>
+                </form>
             </div>
         </div>
-        <hr class="bg-secondary mb-5">
-        
+
         {% if messages %}
             {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">{{ message }}</div>
             {% endfor %}
         {% endif %}
 
-        <h3 class="mb-3 text-warning">My Watchlist</h3>
-        <div class="row row-cols-1 row-cols-md-4 g-4 mb-5">
-            {% if watchlist %}
-                {% for item in watchlist %}
-                    <div class="col">
-                        <div class="card h-100 bg-secondary text-white movie-card border-0 shadow">
-                            <div class="bg-black text-center d-flex align-items-center justify-content-center" style="height: 300px;" id="poster-{{ item.movie_id }}">
-                                <span class="text-muted small">Loading...</span>
-                            </div>
-                            <div class="card-body d-flex flex-column">
-                                <h6 class="card-title fw-bold text-truncate" title="{{ item.movie_title }}">{{ item.movie_title }}</h6>
-                                <p class="card-text small text-light mb-3">Added: {{ item.added_at|date:"M d, Y" }}</p>
-                                
-                                <div class="mt-auto">
-                                    <form method="POST" action="{% url 'remove_from_watchlist' item.movie_id %}">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-outline-danger btn-sm w-100 fw-bold">Remove</button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                {% endfor %}
-            {% else %}
-                <p class="text-muted ms-3">Your watchlist is empty. Go find some movies!</p>
-            {% endif %}
-        </div>
+        <hr class="bg-secondary mb-5">
 
-        <h3 class="mb-3 text-success">My Ratings</h3>
-        <div class="row row-cols-1 row-cols-md-4 g-4 mb-5">
-            {% if ratings %}
-                {% for item in ratings %}
-                    <div class="col">
-                        <div class="card h-100 bg-secondary text-white movie-card border-0 shadow">
-                            <div class="bg-black text-center d-flex align-items-center justify-content-center" style="height: 300px;" id="poster-{{ item.movie_id }}">
-                                <span class="text-muted small">Loading...</span>
-                            </div>
-                            <div class="card-body d-flex flex-column">
-                                <h6 class="card-title fw-bold text-truncate" title="{{ item.movie_title }}">{{ item.movie_title }}</h6>
-                                <h5 class="text-warning mb-3">Current: {{ item.score }} ⭐</h5>
-                                
-                                <div class="mt-auto d-flex gap-2">
-                                    <form method="POST" action="{% url 'rate_movie' item.movie_id %}" class="d-flex w-100">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="movie_title" value="{{ item.movie_title }}">
-                                        <select name="score" class="form-select form-select-sm bg-dark text-white border-secondary me-1" required>
-                                            <option value="" selected disabled>Edit</option>
-                                            <option value="5">5 ⭐</option>
-                                            <option value="4">4 ⭐</option>
-                                            <option value="3">3 ⭐</option>
-                                            <option value="2">2 ⭐</option>
-                                            <option value="1">1 ⭐</option>
-                                        </select>
-                                        <button type="submit" class="btn btn-success btn-sm fw-bold">Save</button>
-                                    </form>
-                                    <form method="POST" action="{% url 'delete_rating' item.movie_id %}">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-outline-danger btn-sm fw-bold" title="Delete Rating">X</button>
-                                    </form>
+        <h3 class="mb-3 text-info fw-bold">⏳ Up Next (Watchlist)</h3>
+        {% if watchlist %}
+            <div class="scroll-container mb-5">
+                <div class="nav-btn btn-left" onclick="scrollGrid('watchlist-row', -800)">&#10094;</div>
+                <div class="scrolling-wrapper" id="watchlist-row">
+                    {% for item in watchlist %}
+                        <div class="scroll-item">
+                            <div class="card h-100 bg-secondary text-white movie-card border-0 shadow">
+                                <div class="bg-black text-center d-flex align-items-center justify-content-center" id="poster-{{ item.movie_id }}">
+                                    <span class="text-muted small">Loading...</span>
                                 </div>
-                                
+                                <div class="card-body d-flex flex-column">
+                                    <h6 class="card-title fw-bold text-truncate" title="{{ item.movie_title }}">{{ item.movie_title }}</h6>
+                                    <p class="text-white-50 small mb-3">Added: {{ item.added_at|date:"M d, Y" }}</p>
+                                    <div class="mt-auto">
+                                        <form method="POST" action="{% url 'remove_from_watchlist' item.movie_id %}" class="ajax-watchlist-form">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-outline-danger btn-sm w-100 fw-bold">Remove</button>
+                                        </form>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                {% endfor %}
-            {% else %}
-                <p class="text-muted ms-3">You haven't rated any movies yet.</p>
-            {% endif %}
-        </div>
+                    {% endfor %}
+                </div>
+                <div class="nav-btn btn-right" onclick="scrollGrid('watchlist-row', 800)">&#10095;</div>
+            </div>
+        {% else %}
+            <div class="mb-5 p-4 bg-dark rounded border border-secondary text-center shadow">
+                <p class="text-muted mb-0">Your watchlist is currently empty. Head back to the dashboard to discover some films!</p>
+            </div>
+        {% endif %}
+
+        <h3 class="mb-3 text-success fw-bold mt-5">⭐ Films I've Rated</h3>
+        {% if ratings %}
+            <div class="scroll-container mb-5">
+                <div class="nav-btn btn-left" onclick="scrollGrid('ratings-row', -800)">&#10094;</div>
+                <div class="scrolling-wrapper" id="ratings-row">
+                    {% for rating in ratings %}
+                        <div class="scroll-item">
+                            <div class="card h-100 bg-secondary text-white movie-card border-0 shadow">
+                                <div class="bg-black text-center d-flex align-items-center justify-content-center" id="poster-{{ rating.movie_id }}">
+                                    <span class="text-muted small">Loading...</span>
+                                </div>
+                                <div class="card-body d-flex flex-column">
+                                    <h6 class="card-title fw-bold text-truncate" title="{{ rating.movie_title }}">{{ rating.movie_title }}</h6>
+                                    <p class="text-white-50 small mb-1">Rated: {{ rating.created_at|date:"M d, Y" }}</p>
+                                    
+                                    <div class="mt-auto">
+                                        <form method="POST" action="{% url 'rate_movie' rating.movie_id %}" class="ajax-rating-form">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="movie_title" value="{{ rating.movie_title }}">
+                                            
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div class="star-rating">
+                                                    <input type="radio" id="star5-{{ rating.movie_id }}" name="score" value="5" {% if rating.score == 5 %}checked{% endif %} />
+                                                    <label for="star5-{{ rating.movie_id }}" title="5 stars">★</label>
+                                                    
+                                                    <input type="radio" id="star4-{{ rating.movie_id }}" name="score" value="4" {% if rating.score == 4 %}checked{% endif %} />
+                                                    <label for="star4-{{ rating.movie_id }}" title="4 stars">★</label>
+                                                    
+                                                    <input type="radio" id="star3-{{ rating.movie_id }}" name="score" value="3" {% if rating.score == 3 %}checked{% endif %} />
+                                                    <label for="star3-{{ rating.movie_id }}" title="3 stars">★</label>
+                                                    
+                                                    <input type="radio" id="star2-{{ rating.movie_id }}" name="score" value="2" {% if rating.score == 2 %}checked{% endif %} />
+                                                    <label for="star2-{{ rating.movie_id }}" title="2 stars">★</label>
+                                                    
+                                                    <input type="radio" id="star1-{{ rating.movie_id }}" name="score" value="1" {% if rating.score == 1 %}checked{% endif %} />
+                                                    <label for="star1-{{ rating.movie_id }}" title="1 star">★</label>
+                                                </div>
+                                                <span class="save-status text-success fw-bold"></span>
+                                            </div>
+                                        </form>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="nav-btn btn-right" onclick="scrollGrid('ratings-row', 800)">&#10095;</div>
+            </div>
+        {% else %}
+            <div class="mb-5 p-4 bg-dark rounded border border-secondary text-center shadow">
+                <p class="text-muted mb-0">You haven't rated any movies yet. Rating movies helps improve your future recommendations!</p>
+            </div>
+        {% endif %}
 
     </div>
 
     <script>
         const TMDB_API_KEY = 'dec1382fbb89751f2f231fee7ec947e5';
 
+        function scrollGrid(rowId, distance) {
+            const row = document.getElementById(rowId);
+            row.scrollBy({ left: distance, behavior: 'smooth' });
+        }
+
         document.addEventListener("DOMContentLoaded", function() {
+            
+            // --- POPULATE POSTERS ---
             const posterDivs = document.querySelectorAll('[id^="poster-"]');
-
             posterDivs.forEach(div => {
-                const movieId = div.id.split('-')[1];
-
+                const movieId = div.id.split('-').pop();
                 fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${TMDB_API_KEY}`)
-                    .then(response => response.json())
+                    .then(res => res.json())
                     .then(data => {
                         if (data.poster_path) {
                             const imageUrl = `https://image.tmdb.org/t/p/w500${data.poster_path}`;
-                            // Grab the overview (or set a default if it doesn't exist)
-                            const overview = data.overview ? data.overview : "No description available for this movie.";
-                            
-                            // Inject the image AND the hover overlay dynamically
+                            const overview = data.overview ? data.overview : "No description available.";
                             div.innerHTML = `
                                 <div class="poster-wrapper w-100 h-100">
-                                    <img src="${imageUrl}" alt="Movie Poster" class="img-fluid w-100 h-100" style="object-fit: cover;">
-                                    <div class="poster-overlay">
-                                        <p class="poster-desc">${overview}</p>
-                                    </div>
-                                </div>
-                            `;
-                            div.classList.remove('p-3', 'd-flex', 'align-items-center', 'justify-content-center');
+                                    <img src="${imageUrl}" alt="Poster" class="img-fluid w-100 h-100" style="object-fit: cover;">
+                                    <div class="poster-overlay"><p class="poster-desc">${overview}</p></div>
+                                </div>`;
                         } else {
                             div.innerHTML = `<span class="text-muted small">No Poster</span>`;
                         }
-                    })
-                    .catch(error => console.error("Error:", error));
+                    });
             });
+
+            // --- AJAX LOGIC: WATCHLIST REMOVAL ---
+            const watchlistForms = document.querySelectorAll('.ajax-watchlist-form');
+            watchlistForms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault(); 
+                    const formData = new FormData(this);
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    submitBtn.innerHTML = '⏳...';
+                    submitBtn.disabled = true;
+
+                    fetch(this.action, {
+                        method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    }).then(response => {
+                        if (response.ok) {
+                            submitBtn.innerHTML = '✅ Removed';
+                            submitBtn.classList.replace('btn-outline-danger', 'btn-danger');
+                            setTimeout(() => {
+                                form.closest('.scroll-item').style.transition = "opacity 0.5s ease";
+                                form.closest('.scroll-item').style.opacity = "0";
+                                setTimeout(() => form.closest('.scroll-item').style.display = 'none', 500);
+                            }, 1000);
+                        }
+                    });
+                });
+            });
+
+            // --- AJAX LOGIC: AUTO-SAVE EDITED RATINGS ---
+            const ratingForms = document.querySelectorAll('.ajax-rating-form');
+            ratingForms.forEach(form => {
+                // Listen for any change to the radio buttons inside the form
+                form.addEventListener('change', function(e) {
+                    if(e.target.type === 'radio') {
+                        const formData = new FormData(this);
+                        const statusSpan = this.querySelector('.save-status');
+                        
+                        statusSpan.innerText = '⏳';
+                        statusSpan.style.opacity = '1';
+
+                        fetch(this.action, {
+                            method: 'POST',
+                            body: formData,
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        })
+                        .then(response => {
+                            if(response.ok) {
+                                statusSpan.innerText = '✅ Saved';
+                                // Fade the success message out after 2 seconds
+                                setTimeout(() => { statusSpan.style.opacity = '0'; }, 2000);
+                            } else {
+                                statusSpan.innerText = '❌ Error';
+                            }
+                        })
+                        .catch(error => {
+                            statusSpan.innerText = '❌ Error';
+                        });
+                    }
+                });
+            });
+
+            setTimeout(() => {
+                document.querySelectorAll('.alert').forEach(a => {
+                    a.style.transition = "opacity 0.5s ease"; a.style.opacity = "0";
+                    setTimeout(() => a.remove(), 500);
+                });
+            }, 3000);
         });
-        setTimeout(function() {
-            const alerts = document.querySelectorAll('.alert');
-            alerts.forEach(function(alert) {
-                // 1. Fade it out smoothly
-                alert.style.transition = "opacity 0.5s ease";
-                alert.style.opacity = "0";
-                
-                // 2. Remove it entirely from the HTML after the fade is done
-                setTimeout(() => alert.remove(), 500);
-            });
-        }, 2000);
     </script>
 </body>
 </html>
