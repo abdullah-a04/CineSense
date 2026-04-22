@@ -97,11 +97,20 @@
                 </div>
 
                 <div class="survey-step" id="step-4">
-                    <h3 class="mb-4 text-center">🎥 Top 3 Favorite Directors?</h3>
-                    <div class="mx-auto" style="max-width: 500px;">
-                        <input type="text" name="director1" class="form-control form-control-lg bg-black text-white border-secondary mb-2" placeholder="1. e.g. Christopher Nolan">
-                        <input type="text" name="director2" class="form-control form-control-lg bg-black text-white border-secondary mb-2" placeholder="2. e.g. Greta Gerwig">
-                        <input type="text" name="director3" class="form-control form-control-lg bg-black text-white border-secondary mb-2" placeholder="3. e.g. Denis Villeneuve">
+                    <h3 class="mb-4 text-center">🎥 Pick Your Favorite Directors</h3>
+                    <p class="text-center text-secondary mb-4">Select up to 3 based on their modern masterpieces.</p>
+                    <div class="row row-cols-2 row-cols-md-4 g-3 mx-auto">
+                        
+                        {% for d in directors %}
+                        <div class="col">
+                            <input type="checkbox" class="btn-check" id="dir-{{ d.id }}" name="directors" value="{{ d.value }}">
+                            <label class="btn btn-outline-info w-100 py-3 custom-chip h-100 d-flex flex-column justify-content-center" for="dir-{{ d.id }}">
+                                <span class="fs-6 fw-bold">{{ d.name }}</span>
+                                <small class="text-white-50">({{ d.movie }})</small>
+                            </label>
+                        </div>
+                        {% endfor %}
+                        
                     </div>
                 </div>
 
