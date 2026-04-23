@@ -123,11 +123,11 @@
         setTimeout(function() {
             const alerts = document.querySelectorAll('.alert');
             alerts.forEach(function(alert) {
-                // 1. Fade it out smoothly
+                // Fade it out smoothly
                 alert.style.transition = "opacity 0.5s ease";
                 alert.style.opacity = "0";
                 
-                // 2. Remove it entirely from the HTML after the fade is done
+                // Remove it entirely from the HTML after the fade is done
                 setTimeout(() => alert.remove(), 500);
             });
         }, 3000); // 3000 milliseconds = 3 seconds

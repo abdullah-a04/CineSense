@@ -31,7 +31,7 @@ def preference_survey(request):
     if request.method == 'POST':
         profile = request.user.profile
         
-        # 1. Catch all the data from the new HTML form
+        # Catch all the data from the new HTML form
         genres = request.POST.get('genres', '')
         era = request.POST.get('era', '')
         
@@ -42,11 +42,11 @@ def preference_survey(request):
         actor5 = request.POST.get('actor5', '').replace(" ", "")
         actors_list = [a for a in [actor1, actor2, actor3, actor4, actor5] if a]
         
-        # Directors (Combine the 2 text boxes)
+        # Directors 
         directors_list = request.POST.getlist('directors')
         profile.favorite_directors = " ".join(directors_list)
 
-        # MOVIES (Now catches 3 - Note: We do NOT remove spaces for movie titles)
+        # MOVIES 
         movie1 = request.POST.get('movie1', '')
         movie2 = request.POST.get('movie2', '')
         movie3 = request.POST.get('movie3', '')
@@ -66,10 +66,9 @@ def preference_survey(request):
         return redirect('home')
 
     # GET request - render the blank form
-    # GET request - render the blank form
     genres_list = ['Action', 'Comedy', 'Drama', 'Sci-Fi', 'Horror', 'Romance', 'Thriller', 'Animation', 'Fantasy', 'Crime', 'Mystery', 'Adventure', 'Family']
     
-    # 1. Create a Master Pool of diverse directors
+    # Create a Master Pool of diverse directors
     MASTER_DIRECTORS = [
         {'id': 'nolan', 'name': 'Christopher Nolan', 'value': 'ChristopherNolan', 'movie': 'The Dark Knight'},
         {'id': 'villeneuve', 'name': 'Denis Villeneuve', 'value': 'DenisVilleneuve', 'movie': 'Dune'},
@@ -89,7 +88,7 @@ def preference_survey(request):
         {'id': 'wes', 'name': 'Wes Anderson', 'value': 'WesAnderson', 'movie': 'The Grand Budapest Hotel'},
     ]
     
-    # 2. Randomly select 8 from the pool
+    # Randomly select 8 from the pool
     random_directors = random.sample(MASTER_DIRECTORS, 8)
     
     return render(request, 'users/survey.html', {
@@ -106,26 +105,25 @@ def home(request):
     if not profile.survey_completed:
         return redirect('preference_survey')
         
-    # --- 1. THE "HARD" QUERY ---
+    # THE "HARD" QUERY
     hard_query_parts = [
         profile.favorite_genres, profile.preferred_era, profile.favorite_actors,
         profile.favorite_directors, profile.favorite_movie
     ]
     hard_query = " ".join([q for q in hard_query_parts if q])
     
-    # --- 2. THE "SOFT" QUERY (Genre Roulette) ---
+    # THE "SOFT" QUERY (Genre Roulette)
     user_genres = [g.strip() for g in profile.favorite_genres.split(',')] if profile.favorite_genres else []
     random_discovery_genre = random.choice(user_genres) if user_genres else ""
     soft_query = f"{random_discovery_genre} {profile.preferred_era}"
-    
-    # --- RUN ENGINES ---
+
     hard_df = get_hybrid_recommendations(request.user, hard_query)
     soft_df = get_hybrid_recommendations(request.user, soft_query)
     
     all_hard = hard_df.to_dict('records')
     all_soft = soft_df.to_dict('records')
     
-    # --- 🎲 SPOT-ON MATCHES (Top 40 Pool) ---
+    # SPOT-ON MATCHES (Top 40 Pool)
     hard_pool = all_hard[:40]
     if len(hard_pool) >= 10:
         top_matches = random.sample(hard_pool, 10)
@@ -135,7 +133,7 @@ def home(request):
         
     shown_movie_ids = [m['id'] for m in top_matches]
     
-    # --- ☢️ DISCOVERY ZONE (Nuclear Randomizer) ---
+    # DISCOVERY ZONE (Nuclear Randomizer)
     # Grab the ENTIRE list of soft matches, not just the top slice
     valid_soft = [m for m in all_soft if m['id'] not in shown_movie_ids]
     
@@ -178,8 +176,7 @@ def rate_movie(request, movie_id):
         movie_title = request.POST.get('movie_title')
         score = request.POST.get('score')
         
-        # update_or_create is a brilliant Django shortcut. If they haven't rated it, 
-        # it creates it. If they have, it updates their old score!
+        # Used update_or_create to allow users to change their rating if they rate the same movie again
         rating, created = Rating.objects.update_or_create(
             user=request.user, 
             movie_id=movie_id,
@@ -226,7 +223,7 @@ def delete_rating(request, movie_id):
             messages.success(request, "🗑️ Rating permanently deleted.")
     return redirect('my_list')
 
-import requests # <--- IMPORTANT: Add this at the very top of views.py
+import requests 
 
 @login_required
 def search(request):
@@ -234,10 +231,10 @@ def search(request):
     tmdb_results = []
     
     if query:
-        # Use your active TMDB API Key
+        # Use the active TMDB API Key
         api_key = 'dec1382fbb89751f2f231fee7ec947e5'
         
-        # We call the TMDB Search API directly
+        # call the TMDB Search API directly
         url = "https://api.themoviedb.org/3/search/movie"
         params = {
             'api_key': api_key,
@@ -258,7 +255,6 @@ def search(request):
         except Exception as e:
             print(f"DEBUG ERROR: {e}")
             
-    # IMPORTANT: We send 'tmdb_results' to the template as 'movies'
     return render(request, 'users/search_results.html', {
         'movies': tmdb_results, 
         'query': query

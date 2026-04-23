@@ -41,7 +41,7 @@
         .btn-left { left: -25px; }
         .btn-right { right: -25px; }
 
-        /* --- THE NEW INTERACTIVE STAR RATING CSS --- */
+        /* THE NEW INTERACTIVE STAR RATING CSS */
         .star-rating {
             display: flex;
             flex-direction: row-reverse; /* Reverses order so hover works left-to-right */
@@ -189,7 +189,7 @@
 
         document.addEventListener("DOMContentLoaded", function() {
             
-            // --- POPULATE POSTERS ---
+            // POPULATE POSTERS
             const posterDivs = document.querySelectorAll('[id^="poster-"]');
             posterDivs.forEach(div => {
                 const movieId = div.id.split('-').pop();
@@ -210,7 +210,7 @@
                     });
             });
 
-            // --- AJAX LOGIC: WATCHLIST REMOVAL ---
+            // AJAX LOGIC: WATCHLIST REMOVAL
             const watchlistForms = document.querySelectorAll('.ajax-watchlist-form');
             watchlistForms.forEach(form => {
                 form.addEventListener('submit', function(e) {
@@ -236,7 +236,7 @@
                 });
             });
 
-            // --- AJAX LOGIC: AUTO-SAVE EDITED RATINGS ---
+            // AJAX LOGIC: AUTO-SAVE EDITED RATINGS
             const ratingForms = document.querySelectorAll('.ajax-rating-form');
             ratingForms.forEach(form => {
                 // Listen for any change to the radio buttons inside the form

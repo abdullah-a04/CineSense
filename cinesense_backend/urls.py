@@ -7,6 +7,6 @@ urlpatterns = [
     path('users/', include('users.urls')), # Connects the app routes (survey, home)
     path('accounts/', include('django.contrib.auth.urls')), # Adds login, logout
     
-    # THE FIX: Catch empty URLs and seamlessly redirect to the home page
+    # Catch empty URLs and seamlessly redirect to the home page
     path('', RedirectView.as_view(pattern_name='home', permanent=False), name='index'), 
 ]

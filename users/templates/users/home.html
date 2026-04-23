@@ -203,7 +203,7 @@
 
         document.addEventListener("DOMContentLoaded", function() {
             
-            // --- POPULATE POSTERS ---
+            // POPULATE POSTERS
             const posterDivs = document.querySelectorAll('[id^="poster-"]');
             posterDivs.forEach(div => {
                 const movieId = div.id.split('-').pop();
@@ -224,7 +224,7 @@
                     });
             });
 
-            // --- HERO BILLBOARD LOGIC ---
+            // HERO BILLBOARD LOGIC
             {% if top_matches %}
                 const heroMovieId = {{ top_matches.0.id }};
                 fetch(`https://api.themoviedb.org/3/movie/${heroMovieId}?api_key=${TMDB_API_KEY}&language=en-US`)
@@ -300,7 +300,7 @@
             }, 3000);
         });
 
-        // --- PLAY TRAILER FUNCTION ---
+        // PLAY TRAILER FUNCTION
         function playTrailer(movieId) {
             fetch(`https://api.themoviedb.org/3/movie/${movieId}/videos?api_key=${TMDB_API_KEY}`)
                 .then(res => res.json())

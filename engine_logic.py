@@ -4,7 +4,7 @@ from ast import literal_eval
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-# --- PHASE 1: DATA LOADING & PREPROCESSING ---
+#Data Loading & Preprocessing (PHASE 1)
 
 df_movies = pd.read_csv('tmdb_5000_movies.csv')
 df_credits = pd.read_csv('tmdb_5000_credits.csv')
@@ -18,7 +18,7 @@ features = ['cast', 'crew', 'keywords', 'genres']
 for feature in features:
     df_movies[feature] = df_movies[feature].apply(literal_eval)
 
-# --- PHASE 2: METADATA EXTRACTION ---
+#Metadata Extraction & Cleaning (PHASE 2)
 
 def get_director(x):
     for i in x:
@@ -58,7 +58,7 @@ def create_soup(x):
 
 df_movies['soup'] = df_movies.apply(create_soup, axis=1)
 
-# --- PHASE 3: VECTORIZATION ---
+#Vectorization & Similarity Calculation (PHASE 3)
 
 count = CountVectorizer(stop_words='english')
 count_matrix = count.fit_transform(df_movies['soup'])
@@ -93,11 +93,10 @@ def get_hybrid_recommendations(user, user_query, cosine_sim=cosine_sim):
     Weighted Hybrid Recommendation Engine (FR4).
     Normalizes query input and applies Collaborative Filtering multiplier.
     """
-    # 1. NORMALIZE USER QUERY
-    # Turns "Chris Evans" into "chrisevans" to match the metadata soup
+    # Normalize user query and turns "Chris Evans" into "chrisevans" to match the metadata soup
     normalized_query = user_query.lower()
 
-    # 2. GET CONTENT-BASED BASELINE (Top 30)
+    # GET CONTENT-BASED BASELINE (Top 30)
     user_vec = count.transform([normalized_query])
     cb_scores = list(enumerate(cosine_similarity(user_vec, count_matrix)[0]))
     cb_scores = sorted(cb_scores, key=lambda x: x[1], reverse=True)[0:30] 
@@ -105,7 +104,7 @@ def get_hybrid_recommendations(user, user_query, cosine_sim=cosine_sim):
     movie_scores = {i[0]: i[1] for i in cb_scores}
     movie_indices = list(movie_scores.keys())
     
-    # 3. COLLABORATIVE FILTERING (Dynamic Database Query)
+    # COLLABORATIVE FILTERING (Dynamic Database Query)
     from users.models import Rating 
     
     ratings_qs = Rating.objects.all().values('user_id', 'movie_id', 'score')
@@ -121,7 +120,7 @@ def get_hybrid_recommendations(user, user_query, cosine_sim=cosine_sim):
                 crowd_multiplier = 1.0 + (avg_ratings[tmdb_id] / 2.0) 
                 movie_scores[idx] = movie_scores[idx] * crowd_multiplier
 
-    # 4. FINAL HYBRID SORTING
+    #FINAL HYBRID SORTING
     hybrid_scores = sorted(movie_scores.items(), key=lambda item: item[1], reverse=True)
     top_10_indices = [i[0] for i in hybrid_scores[0:10]]
     
